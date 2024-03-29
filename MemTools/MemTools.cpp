@@ -176,8 +176,8 @@ uintptr_t MemTools::PatternScan(uintptr_t moduleBase, size_t textSize, const std
       continue;
     }
 
-    // Apply pattern scanning in the read memory using KMP algorithm
-    int j = 0; // index for pattern[]
+    
+    int j = 0;
     for (size_t i = 0; i < bytesRead; ++i)
     {
       while (j > 0 && (mask[j] != '?' && pattern[j] != buffer[i]))
@@ -188,11 +188,11 @@ uintptr_t MemTools::PatternScan(uintptr_t moduleBase, size_t textSize, const std
 
       if (j == patternSize)
       {
-        return (currAddress + i - j + 1) - moduleBase; // Pattern found, return the start address
+        return (currAddress + i - j + 1) - moduleBase;
       }
     }
   }
 
   OutputDebugStringA("Pattern not found\n");
-  return 0; // Pattern not found
+  return 0;
 }
