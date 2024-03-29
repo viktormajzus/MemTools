@@ -23,3 +23,11 @@ Patch() patches several bytes at a specific address.
 Nop() patches several nops at a specific address.
 
 PatternScan() uses an IDA-style string to scan for a signature in a process. Returns an offset from the base address.
+
+Example implementation:
+```
+MemTools mem = MemTools(L"process.exe", PROCESS_ALL_ACCESS);
+mem.Write<int>(uintptr_t address, int value);
+mem.Patch(uintptr_t address, {0x90, 0x90});
+```
+Of course do include some error handling. In most cases, if a function fails it will either return NULL, nullptr or false. It will also output a debug string.
