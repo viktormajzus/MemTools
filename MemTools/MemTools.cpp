@@ -150,8 +150,8 @@ SIZE_T MemTools::Nop(uintptr_t address, SIZE_T numBytes)
 uintptr_t MemTools::PatternScan(uintptr_t moduleBase, size_t textSize, const std::string& IDAPattern)
 {
   std::string pattern, mask;
-  parseIDAPattern(IDAPattern, pattern, mask);
-  std::vector<int> lps = computeLPSArray(pattern, mask);
+  ParseIDAPattern(IDAPattern, pattern, mask);
+  std::vector<int> lps = ComputeLPSArray(pattern, mask);
 
   size_t patternSize = pattern.size();
   std::vector<char> buffer;
@@ -168,7 +168,7 @@ uintptr_t MemTools::PatternScan(uintptr_t moduleBase, size_t textSize, const std
       continue;
     }
 
-    size_t readSize = static_cast<size_t>(min(mbi.RegionSize, endAddress - currAddress));
+    size_t readSize = static_cast<size_t>((mbi.RegionSize < endAddress - currAddress) ? mbi.RegionSize : endAddress - currAddress);
     buffer.resize(readSize);
     if (!ReadProcessMemory(handleManager.GetHandle(), reinterpret_cast<LPCVOID>(currAddress), buffer.data(), readSize, &bytesRead))
     {
@@ -176,22 +176,23 @@ uintptr_t MemTools::PatternScan(uintptr_t moduleBase, size_t textSize, const std
       continue;
     }
 
-    // Apply pattern scanning in the read memory
-    for (size_t i = 0; i < bytesRead - patternSize; ++i)
+    // Apply pattern scanning in the read memory using KMP algorithm
+    int j = 0; // index for pattern[]
+    for (size_t i = 0; i < bytesRead; ++i)
     {
-      size_t j = 0;
-      for (; j < patternSize; ++j)
-      {
-        if (mask[j] != '?' && pattern[j] != buffer[i + j])
-          break;
-      }
+      while (j > 0 && (mask[j] != '?' && pattern[j] != buffer[i]))
+        j = lps[j - 1];
+
+      if (mask[j] == '?' || pattern[j] == buffer[i])
+        j++;
+
       if (j == patternSize)
       {
-        return (currAddress + i) - moduleBase; // Pattern found
+        return (currAddress + i - j + 1) - moduleBase; // Pattern found, return the start address
       }
     }
   }
 
   OutputDebugStringA("Pattern not found\n");
-  return 0; // Pattern not found, return 0 as an invalid address
+  return 0; // Pattern not found
 }
